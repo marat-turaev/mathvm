@@ -353,22 +353,23 @@ private:
     }
 };
 
-class BytecodeTranslatorImpl : public Translator {
-public:
-    virtual Status *translate(const string &program, Code **code)  {
-        Parser parser;
-        Status *status = parser.parseProgram(program);
-        if (status && status->isError()) {
-            return status;
-        }
+// class BytecodeTranslatorImpl : public Translator {
+// public:
+//     virtual Status *translate(const string &program, Code **code)  {
+//         Parser parser;
+//         Status *status = parser.parseProgram(program);
+//         if (status && status->isError()) {
+//             return status;
+//         }
 
-        BytecodeMainVisitor visitor(*code);
+//         BytecodeMainVisitor visitor(*code);
 
-        //TODO return Status Ok
-        return 0;
-    }
-};
+//         //TODO return Status Ok
+//         return 0;
+//     }
+// };
 
 Translator *Translator::create(const string &impl) {
-    return new BytecodeTranslatorImpl();
+    // return new BytecodeTranslatorImpl();
+    return 0;
 }

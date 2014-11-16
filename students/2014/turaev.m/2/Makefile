@@ -10,7 +10,7 @@ endif
 USER_OBJ = \
     $(JIT_OBJ) \
     $(OBJ)/main$(OBJ_SUFF) \
-    $(OBJ)/ast_printer$(OBJ_SUFF)
+    $(OBJ)/bytecode_visitor$(OBJ_SUFF)
 
 USER_CFLAGS = -Wno-unused
 
