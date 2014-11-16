@@ -1,4 +1,5 @@
 #include "mathvm.h"
+#include "rich_function.h"
 
 #include <stdio.h>
 #include <fcntl.h>
