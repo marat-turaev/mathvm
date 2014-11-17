@@ -10,6 +10,7 @@ public:
     BytecodeMainVisitor(Code *code): code(code) {
         //TODO set the first 0 to actual value of the topmost function
         code->addFunction(currentFunction = new RichFunction(0, 0, 0));
+
         typeTokenInstruction[VT_DOUBLE][tADD] = BC_DADD;
         typeTokenInstruction[VT_INT][tADD] = BC_IADD;
         typeTokenInstruction[VT_DOUBLE][tSUB] = BC_DSUB;
@@ -18,6 +19,17 @@ public:
         typeTokenInstruction[VT_INT][tMUL] = BC_IMUL;
         typeTokenInstruction[VT_DOUBLE][tDIV] = BC_DDIV;
         typeTokenInstruction[VT_INT][tDIV] = BC_IDIV;
+
+        typeTokenInstruction[VT_INT][tAOR] = BC_IAOR;
+        typeTokenInstruction[VT_INT][tAND] = BC_IAAND;
+        typeTokenInstruction[VT_INT][tAXOR] = BC_IAXOR;
+
+        typeTokenInstruction[VT_INT][tEQ] = BC_IFICMPE;
+        typeTokenInstruction[VT_INT][tNEQ] = BC_IFICMPNE;
+        typeTokenInstruction[VT_INT][tGT] = BC_IFICMPG;
+        typeTokenInstruction[VT_INT][tGE] = BC_IFICMPGE;
+        typeTokenInstruction[VT_INT][tLT] = BC_IFICMPL;
+        typeTokenInstruction[VT_INT][tLE] = BC_IFICMPLE;
     }
 
     virtual void visitBinaryOpNode(BinaryOpNode *node) {
@@ -26,6 +38,7 @@ public:
         case (tOR):
         case (tAND): {
             binary_logic(node);
+            break;
         }
         case (tADD):
         case (tSUB):
@@ -34,6 +47,16 @@ public:
             node->right()->visit(this);
             node->left()->visit(this);
             binary_math(node->kind());
+            break;
+        }
+        case (tEQ):
+        case (tNEQ):
+        case (tGT):
+        case (tGE):
+        case (tLT):
+        case (tLE): {
+            binary_comparsion(node);
+            break;
         }
         default: {
             assert(0);
@@ -324,6 +347,34 @@ private:
         typesStack.push(VT_INT);
     }
 
+    //TODO: Implement for DOUBLES too (now only for INTs)
+    void binary_comparsion(BinaryOpNode *node) {
+        TokenKind operation = node->kind();
+        assert(operation == tEQ || operation == tNEQ ||  operation == tGT
+               || operation == tGE || operation == tLT || operation == tLE);
+
+        node->left()->visit(this);
+        node->right()->visit(this);
+
+        VarType first = typesStack.top();
+        typesStack.pop();
+        VarType second = typesStack.top();
+        typesStack.pop();
+        assert(first == second == VT_INT);
+
+        Label beforeTrue(currentFunction->bytecode());
+        Label afterTrue(currentFunction->bytecode());
+        Label afterFalse(currentFunction->bytecode());
+        currentFunction->bytecode()->addBranch(typeTokenInstruction[VT_INT][operation], beforeTrue);
+        currentFunction->bytecode()->addBranch(BC_JA, afterTrue);
+        beforeTrue.bind(currentFunction->bytecode()->current());
+        pushInt1();
+        currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+        afterTrue.bind(currentFunction->bytecode()->current());
+        pushInt0();
+        afterFalse.bind(currentFunction->bytecode()->current());
+    }
+
     void binary_logic(BinaryOpNode *node) {
         TokenKind operation = node->kind();
         assert(operation == tAND || operation == tOR);
@@ -464,7 +515,10 @@ private:
                 case (tADD):
                 case (tSUB):
                 case (tMUL):
-                case (tDIV): {
+                case (tDIV):
+                case (tAAND):
+                case (tAOR):
+                case (tAXOR): {
                     emit(typeTokenInstruction[VT_INT][operation]);
                     break;
                 }
