@@ -127,15 +127,13 @@ public:
     virtual void visitIfNode(IfNode *node) {
         node->ifExpr()->visit(this);
 
-        emit(BC_ILOAD0);
+        pushInt0();
 
         Label afterTrue(currentFunction->bytecode());
         currentFunction->bytecode()->addBranch(BC_IFICMPE, afterTrue);
 
-        //Clear stack
-        //TODO: clear types, too?
-        emit(BC_POP);
-        emit(BC_POP);
+        pop();
+        pop();
         node->thenBlock()->visit(this);
 
         Label afterFalse(currentFunction->bytecode());
@@ -144,9 +142,8 @@ public:
         }
         afterTrue.bind(currentFunction->bytecode()->current());
         if (node->elseBlock()) {
-            //Clear stack
-            emit(BC_POP);
-            emit(BC_POP);
+            pop();
+            pop();
             node->elseBlock()->visit(this);
             afterFalse.bind(currentFunction->bytecode()->current());
         }
