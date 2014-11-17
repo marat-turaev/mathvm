@@ -21,9 +21,24 @@ public:
     }
 
     virtual void visitBinaryOpNode(BinaryOpNode *node) {
-        node->right()->visit(this);
-        node->left()->visit(this);
-        binary_math(node->kind());
+        TokenKind operation = node->kind();
+        switch (operation) {
+        case (tOR):
+        case (tAND): {
+            binary_logic(node);
+        }
+        case (tADD):
+        case (tSUB):
+        case (tMUL):
+        case (tDIV): {
+            node->right()->visit(this);
+            node->left()->visit(this);
+            binary_math(node->kind());
+        }
+        default: {
+            assert(0);
+        }
+        }
     }
 
     virtual void visitUnaryOpNode(UnaryOpNode *node) {
@@ -309,7 +324,8 @@ private:
         typesStack.push(VT_INT);
     }
 
-    void binary_logic(TokenKind operation, BinaryOpNode *node) {
+    void binary_logic(BinaryOpNode *node) {
+        TokenKind operation = node->kind();
         assert(operation == tAND || operation == tOR);
 
         node->left()->visit(this);
