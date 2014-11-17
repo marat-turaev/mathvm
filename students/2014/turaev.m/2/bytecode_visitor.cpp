@@ -5,7 +5,7 @@
 
 using namespace mathvm;
 
-class BytecodeMainVisitor : public AstVisitor {
+class BytecodeMainVisitor: public AstVisitor {
 public:
     BytecodeMainVisitor(Code *code): code(code) {
         //TODO set the first 0 to actual value of the topmost function
@@ -27,7 +27,19 @@ public:
     }
 
     virtual void visitUnaryOpNode(UnaryOpNode *node) {
+        node->operand()->visit(this);
+        switch (typesStack.top()) {
+        case (VT_DOUBLE): {
+        }
 
+        case (VT_INT): {
+            break;
+        }
+
+        default: {
+
+        }
+        }
     }
 
     virtual void visitStringLiteralNode(StringLiteralNode *node) {
@@ -73,7 +85,7 @@ public:
             storeToVariable(node->var());
             break;
         }
-        default : {
+        default: {
             assert(0);
         }
         }
@@ -87,7 +99,7 @@ public:
 
     virtual void visitIfNode(IfNode *node) {
         node->ifExpr()->visit(this);
-        
+
         emit(BC_ILOAD0);
 
         Label afterTrue(currentFunction->bytecode());
@@ -213,7 +225,7 @@ private:
             }
             }
         }
-        default : {
+        default: {
             return false;
         }
         }
@@ -297,14 +309,14 @@ private:
         typesStack.pop();
 
         switch (first) {
-        case (VT_DOUBLE) : {
+        case (VT_DOUBLE): {
             switch (second) {
-            case (VT_DOUBLE) : {
+            case (VT_DOUBLE): {
                 switch (operation) {
-                case (tADD) :
-                case (tSUB) :
-                case (tMUL) :
-                case (tDIV) : {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
                     emit(typeTokenInstruction[VT_DOUBLE][operation]);
                     break;
                 }
@@ -315,7 +327,7 @@ private:
                 typesStack.push(VT_DOUBLE);
                 break;
             }
-            case (VT_INT) : {
+            case (VT_INT): {
                 emit(BC_SWAP);
                 typesStack.push(VT_INT);
                 convertTOS(VT_DOUBLE);
@@ -323,10 +335,10 @@ private:
                 emit(BC_SWAP);
 
                 switch (operation) {
-                case (tADD) :
-                case (tSUB) :
-                case (tMUL) :
-                case (tDIV) : {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
                     emit(typeTokenInstruction[VT_DOUBLE][operation]);
                     break;
                 }
@@ -344,17 +356,17 @@ private:
             }
             break;
         }
-        case (VT_INT) : {
+        case (VT_INT): {
             switch (second) {
-            case (VT_DOUBLE) : {
+            case (VT_DOUBLE): {
                 typesStack.push(VT_INT);
                 convertTOS(VT_DOUBLE);
                 typesStack.pop();
                 switch (operation) {
-                case (tADD) :
-                case (tSUB) :
-                case (tMUL) :
-                case (tDIV) : {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
                     emit(typeTokenInstruction[VT_DOUBLE][operation]);
                     break;
                 }
@@ -365,12 +377,12 @@ private:
                 typesStack.push(VT_DOUBLE);
                 break;
             }
-            case (VT_INT) : {
+            case (VT_INT): {
                 switch (operation) {
-                case (tADD) :
-                case (tSUB) :
-                case (tMUL) :
-                case (tDIV) : {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
                     emit(typeTokenInstruction[VT_INT][operation]);
                     break;
                 }
@@ -392,9 +404,55 @@ private:
         }
         }
     }
+
+    void unary_math(TokenKind operation) {
+        switch (typesStack.top()) {
+        case (VT_DOUBLE): {
+            switch (operation) {
+            case (tSUB): {
+                emit(BC_DLOAD0);
+                typesStack.push(VT_DOUBLE);
+                binary_math(tSUB);
+                break;
+            }
+            case (tNOT): {
+                emit(BC_DNEG);
+                break;
+            }
+            default: {
+                assert(0);
+            }
+            }
+            break;
+        }
+
+        case (VT_INT): {
+            switch (operation) {
+            case (tSUB): {
+                emit(BC_ILOAD0);
+                typesStack.push(VT_INT);
+                binary_math(tSUB);
+                break;
+            }
+            case (tNOT): {
+                emit(BC_INEG);
+                break;
+            }
+            default: {
+                assert(0);
+            }
+            }
+            break;
+        }
+
+        default: {
+            assert(0);
+        }
+        }
+    }
 };
 
-class BytecodeTranslatorImpl : public Translator {
+class BytecodeTranslatorImpl: public Translator {
 public:
     virtual Status *translate(const string &program, Code **code)  {
         Parser parser;
