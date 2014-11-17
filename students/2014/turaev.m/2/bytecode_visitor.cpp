@@ -86,9 +86,50 @@ public:
     }
 
     virtual void visitIfNode(IfNode *node) {
+        node->ifExpr()->visit(this);
+        
+        emit(BC_ILOAD0);
+
+        Label afterTrue(currentFunction->bytecode());
+        currentFunction->bytecode()->addBranch(BC_IFICMPE, afterTrue);
+
+        //Clear stack
+        emit(BC_POP);
+        emit(BC_POP);
+        node->thenBlock()->visit(this);
+
+        Label afterFalse(currentFunction->bytecode());
+        if (node->elseBlock()) {
+            currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+        }
+        afterTrue.bind(currentFunction->bytecode()->current());
+        if (node->elseBlock()) {
+            //Clear stack
+            emit(BC_POP);
+            emit(BC_POP);
+            node->elseBlock()->visit(this);
+            afterFalse.bind(currentFunction->bytecode()->current());
+        }
     }
 
     virtual void visitBlockNode(BlockNode *node) {
+        //variables:
+        Scope::VarIterator it(node->scope());
+        while (it.hasNext()) {
+            AstVar *var = it.next();
+            //TODO: this will override value with same name in current fucntion's scope
+            currentFunction->addLocalVariable(var->name(), var->type());
+        }
+
+        //functions:
+        {
+            Scope::FunctionIterator it(node->scope());
+            while (it.hasNext()) {
+                it.next()->node()->visit(this);
+            }
+        }
+
+        node->visitChildren(this);
     }
 
     virtual void visitFunctionNode(FunctionNode *node) {
@@ -353,21 +394,21 @@ private:
     }
 };
 
-// class BytecodeTranslatorImpl : public Translator {
-// public:
-//     virtual Status *translate(const string &program, Code **code)  {
-//         Parser parser;
-//         Status *status = parser.parseProgram(program);
-//         if (status && status->isError()) {
-//             return status;
-//         }
+class BytecodeTranslatorImpl : public Translator {
+public:
+    virtual Status *translate(const string &program, Code **code)  {
+        Parser parser;
+        Status *status = parser.parseProgram(program);
+        if (status && status->isError()) {
+            return status;
+        }
 
-//         BytecodeMainVisitor visitor(*code);
+        BytecodeMainVisitor visitor(*code);
 
-//         //TODO return Status Ok
-//         return 0;
-//     }
-// };
+        //TODO return Status Ok
+        return 0;
+    }
+};
 
 Translator *Translator::create(const string &impl) {
     // return new BytecodeTranslatorImpl();
