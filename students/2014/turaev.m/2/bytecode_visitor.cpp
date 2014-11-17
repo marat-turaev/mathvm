@@ -95,6 +95,7 @@ public:
         currentFunction->bytecode()->addBranch(BC_IFICMPE, afterTrue);
 
         //Clear stack
+        //TODO: clear types, too?
         emit(BC_POP);
         emit(BC_POP);
         node->thenBlock()->visit(this);
@@ -289,6 +290,82 @@ private:
         currentFunction->bytecode()->addInt16(variableId);
 
         typesStack.pop();
+    }
+
+    void pop() {
+        emit(BC_POP);
+        typesStack.pop();
+        emit(BC_POP);
+        typesStack.pop();
+    }
+
+    void pushInt0() {
+        emit(BC_ILOAD0);
+        typesStack.push(VT_INT);
+    }
+
+    void pushInt1() {
+        emit(BC_ILOAD1);
+        typesStack.push(VT_INT);
+    }
+
+    void binary_logic(TokenKind operation, BinaryOpNode *node) {
+        assert(operation == tAND || operation == tOR);
+
+        node->left()->visit(this);
+        assert(typesStack.top() == VT_INT);
+
+        switch (operation) {
+        case (tAND): {
+            //A && B
+            //if (A == false) {
+            Label afterTrue(currentFunction->bytecode());
+            Label afterFalse(currentFunction->bytecode());
+            pushInt0();
+            currentFunction->bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            pop();
+            pop();
+            pushInt0();
+            currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+            //}
+            // else {
+            afterTrue.bind(currentFunction->bytecode()->current());
+            pop();
+            pop();
+            //return B;
+            node->right()->visit(this);
+            assert(typesStack.top() == VT_INT);
+            afterFalse.bind(currentFunction->bytecode()->current());
+            // }
+            break;
+        }
+        case (tOR): {
+            //A || B
+            //if (A == true) {
+            Label afterTrue(currentFunction->bytecode());
+            Label afterFalse(currentFunction->bytecode());
+            pushInt1();
+            currentFunction->bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            pop();
+            pop();
+            pushInt1();
+            currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+            //}
+            // else {
+            afterTrue.bind(currentFunction->bytecode()->current());
+            pop();
+            pop();
+            //return B;
+            node->right()->visit(this);
+            assert(typesStack.top() == VT_INT);
+            afterFalse.bind(currentFunction->bytecode()->current());
+            // }
+            break;
+        }
+        default: {
+            assert(0);
+        }
+        }
     }
 
     void binary_math(TokenKind operation) {
