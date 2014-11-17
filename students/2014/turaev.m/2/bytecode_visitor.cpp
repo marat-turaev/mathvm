@@ -28,18 +28,7 @@ public:
 
     virtual void visitUnaryOpNode(UnaryOpNode *node) {
         node->operand()->visit(this);
-        switch (typesStack.top()) {
-        case (VT_DOUBLE): {
-        }
-
-        case (VT_INT): {
-            break;
-        }
-
-        default: {
-
-        }
-        }
+        unary_math(node->kind());
     }
 
     virtual void visitStringLiteralNode(StringLiteralNode *node) {
