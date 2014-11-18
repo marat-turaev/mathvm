@@ -57,29 +57,30 @@ int main(int argc, char **argv) {
                translateStatus->getError().c_str());
     } else {
         assert(code != 0);
-        vector<Var *> vars;
+        // vector<Var *> vars;
 
-        if (isDefaultExpr) {
-            Var *xVar = new Var(VT_DOUBLE, "x");
-            Var *yVar = new Var(VT_DOUBLE, "y");
-            vars.push_back(xVar);
-            vars.push_back(yVar);
-            xVar->setDoubleValue(42.0);
-        }
-        Status *execStatus = code->execute(vars);
-        if (execStatus->isError()) {
-            printf("Cannot execute expression: error: %s\n",
-                   execStatus->getError().c_str());
-        } else {
-            if (isDefaultExpr) {
-                printf("x evaluated to %f\n", vars[0]->getDoubleValue());
-                for (uint32_t i = 0; i < vars.size(); i++) {
-                    delete vars[i];
-                }
-            }
-        }
+        // if (isDefaultExpr) {
+        //     Var *xVar = new Var(VT_DOUBLE, "x");
+        //     Var *yVar = new Var(VT_DOUBLE, "y");
+        //     vars.push_back(xVar);
+        //     vars.push_back(yVar);
+        //     xVar->setDoubleValue(42.0);
+        // }
+        // Status *execStatus = code->execute(vars);
+        // if (execStatus->isError()) {
+        //     printf("Cannot execute expression: error: %s\n",
+        //            execStatus->getError().c_str());
+        // } else {
+        //     if (isDefaultExpr) {
+        //         printf("x evaluated to %f\n", vars[0]->getDoubleValue());
+        //         for (uint32_t i = 0; i < vars.size(); i++) {
+        //             delete vars[i];
+        //         }
+        //     }
+        // }
+        code->disassemble();
         delete code;
-        delete execStatus;
+        // delete execStatus;
     }
     delete translateStatus;
     delete translator;
