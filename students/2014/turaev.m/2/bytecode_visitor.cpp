@@ -191,18 +191,17 @@ public:
     virtual void visitPrintNode(PrintNode *node) {
         for (uint32_t i = 0; i < node->operands(); ++i) {
             node->operandAt(i)->visit(this);
-            Instruction emitted = BC_INVALID;
             switch (_typesStack.top()) {
             case VT_DOUBLE: {
-                emitted = BC_DPRINT;
+                emit(BC_DPRINT);
                 break;
             }
             case VT_INT: {
-                emitted = BC_DPRINT;
+                emit(BC_DPRINT);
                 break;
             }
             case VT_STRING: {
-                emitted = BC_SPRINT;
+                emit(BC_DPRINT);
                 break;
             }
             default: {
@@ -369,7 +368,7 @@ private:
         Label beforeTrue(_currentFunction->bytecode());
         Label afterTrue(_currentFunction->bytecode());
         Label afterFalse(_currentFunction->bytecode());
-        _currentFunction->bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
+            _currentFunction->bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
         _currentFunction->bytecode()->addBranch(BC_JA, afterTrue);
         beforeTrue.bind(_currentFunction->bytecode()->current());
         pushInt1();
