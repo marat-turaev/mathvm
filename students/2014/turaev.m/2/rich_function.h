@@ -1,3 +1,6 @@
+#ifndef RICH_FUNCTION_H
+#define RICH_FUNCTION_H
+
 #include "mathvm.h"
 #include "ast.h"
 
@@ -5,14 +8,12 @@ using namespace std;
 using namespace mathvm;
 
 class RichFunction : public BytecodeFunction {
-    map<string, pair<VarType, uint16_t> > _local_variables;
-    uint16_t _index; // function's index in the chain of nested functions
-    RichFunction *_parent;  //TODO: use base class
-    uint16_t _id;
+    map<string, uint16_t> _local_variables;
+    uint16_t _variable_id;
 public:
-    RichFunction(AstFunction *function, RichFunction *parent, uint16_t index): BytecodeFunction(function), _index(index), _parent(parent), _id(0) {
+    RichFunction(AstFunction *function): BytecodeFunction(function) {
         for (uint16_t i = 0; i < parametersNumber(); ++i) {
-            _local_variables[parameterName(i)] = std::make_pair(parameterType(i), _id++);
+            _local_variables[parameterName(i)] = _variable_id++;
         }
     }
 
@@ -32,10 +33,12 @@ public:
     }
 
     void addLocalVariable(const string &name, VarType type) {
-        _local_variables[name] = std::make_pair(type, _id++);
+        _local_variables[name] = std::make_pair(type, _variable_id++);
     }
 
     virtual ~RichFunction() {
 
     }
 };
+
+#endif

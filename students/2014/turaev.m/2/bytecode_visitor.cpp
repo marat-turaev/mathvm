@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "rich_function.h"
 #include "interpreter_code_impl.h"
+#include "function_crawler.h"
 #include <stack>
 
 using namespace mathvm;
@@ -9,8 +10,9 @@ using namespace mathvm;
 class BytecodeMainVisitor: public AstVisitor {
 public:
     BytecodeMainVisitor(Code *code, AstFunction *topFunction): _code(code) {
-        //TODO set the first 0 to actual value of the topmost function
-        _code->addFunction(_currentFunction = new RichFunction(topFunction, 0, 0));
+        _code->addFunction(_currentFunction = new RichFunction(topFunction));
+        FunctionCrawler crawler(code);
+        topFunction->node()->body()->visit(&crawler);
 
         _typeTokenInstruction[VT_DOUBLE][tADD] = BC_DADD;
         _typeTokenInstruction[VT_INT][tADD] = BC_IADD;
@@ -153,6 +155,8 @@ public:
     }
 
     virtual void visitBlockNode(BlockNode *node) {
+        _scopeToFuncitonMap[node->scope()] = _currentFunction->id();
+
         //variables:
         Scope::VarIterator it(node->scope());
         while (it.hasNext()) {
@@ -165,7 +169,11 @@ public:
         {
             Scope::FunctionIterator it(node->scope());
             while (it.hasNext()) {
-                it.next()->node()->visit(this);
+                AstFunction *currentAstFunction = it.next();
+                _currentFunction = dynamic_cast<RichFunction *>(_code->functionByName(currentAstFunction->name()));
+                assert(_currentFunction != 0);
+                _scopeToFuncitonMap[currentAstFunction->scope()] = _currentFunction->id();
+                currentAstFunction->node()->visit(this);
             }
         }
 
@@ -177,11 +185,15 @@ public:
     }
 
     virtual void visitReturnNode(ReturnNode *node) {
-        assert(0);
+        node->visitChildren(this);
+        emit(BC_RETURN);
     }
 
     virtual void visitCallNode(CallNode *node) {
-        assert(0);
+        node->visitChildren(this);
+        emit(BC_CALL);
+        uint16_t functionId = _code->functionByName(node->name())->id();
+        _currentFunction->bytecode()->addInt16(functionId);
     }
 
     virtual void visitNativeCallNode(NativeCallNode *node) {
@@ -217,6 +229,7 @@ private:
     RichFunction *_currentFunction;
     stack<VarType> _typesStack;
     map<VarType, map<TokenKind, Instruction> > _typeTokenInstruction;
+    map<Scope *, uint16_t> _scopeToFuncitonMap; //TODO: fill
 
     void emit(Instruction inst) {
         _currentFunction->bytecode()->addInsn(inst);
@@ -268,25 +281,44 @@ private:
     }
 
     void loadVariable(const AstVar *astVar) {
-        const string &variableName = astVar->name();
-        RichFunction *actualFunction = _currentFunction->lookupParentFunction(variableName);
-        uint16_t variableId = actualFunction->getVariableId(variableName);
-        uint16_t functionIndex = actualFunction->getIndex();
+        VarType type = astVar->type();
+        assert(type == VT_DOUBLE || type == VT_INT || type == VT_STRING);
+        // const string &variableName = astVar->name();
+        // RichFunction *actualFunction = _currentFunction->lookupParentFunction(variableName);
+        // uint16_t variableId = actualFunction->getVariableId(variableName);
+        // uint16_t functionIndex = actualFunction->getIndex();
 
-        Instruction emitted = BC_INVALID;
+        bool is_local = _scopeToFuncitonMap[astVar->owner()] == _currentFunction->id();
+
+        if (type == VT_INT) {
+            if (is_local) {
+                emit(BC_LOADIVAR);
+                
+            } else {
+
+            }
+
+            return;
+        }        
         switch (astVar->type()) {
         case VT_DOUBLE: {
-            emitted = BC_LOADCTXDVAR;
+            emit(BC_LOADCTXDVAR);
+            _currentFunction->bytecode()->addInt16(functionIndex);
+            _currentFunction->bytecode()->addInt16(variableId);
             _typesStack.push(VT_DOUBLE);
             break;
         }
         case VT_INT: {
-            emitted = BC_LOADCTXIVAR;
+            emit(BC_LOADCTXIVAR);
+            _currentFunction->bytecode()->addInt16(functionIndex);
+            _currentFunction->bytecode()->addInt16(variableId);
             _typesStack.push(VT_INT);
             break;
         }
         case VT_STRING: {
-            emitted = BC_LOADCTXSVAR;
+            emit(BC_LOADCTXSVAR);
+            _currentFunction->bytecode()->addInt16(functionIndex);
+            _currentFunction->bytecode()->addInt16(variableId);
             _typesStack.push(VT_STRING);
             break;
         }
@@ -295,9 +327,7 @@ private:
         }
         }
 
-        emit(emitted);
-        _currentFunction->bytecode()->addInt16(functionIndex);
-        _currentFunction->bytecode()->addInt16(variableId);
+
     }
 
     void storeToVariable(const AstVar *astVar) {
@@ -368,7 +398,7 @@ private:
         Label beforeTrue(_currentFunction->bytecode());
         Label afterTrue(_currentFunction->bytecode());
         Label afterFalse(_currentFunction->bytecode());
-            _currentFunction->bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
+        _currentFunction->bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
         _currentFunction->bytecode()->addBranch(BC_JA, afterTrue);
         beforeTrue.bind(_currentFunction->bytecode()->current());
         pushInt1();
