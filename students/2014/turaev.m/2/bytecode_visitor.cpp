@@ -129,6 +129,7 @@ public:
         assert(0);
     }
 
+    //TODO: re-think assuming binary logic
     virtual void visitIfNode(IfNode *node) {
         node->ifExpr()->visit(this);
 
@@ -147,8 +148,6 @@ public:
         }
         afterTrue.bind(_currentFunction->bytecode()->current());
         if (node->elseBlock()) {
-            pop(); //TODO: maybe no?
-            pop(); //TODO: maybe no?
             node->elseBlock()->visit(this);
             afterFalse.bind(_currentFunction->bytecode()->current());
         }
@@ -167,6 +166,7 @@ public:
 
         //functions:
         {
+            RichFunction *parentFunction = _currentFunction;
             Scope::FunctionIterator it(node->scope());
             while (it.hasNext()) {
                 AstFunction *currentAstFunction = it.next();
@@ -175,11 +175,13 @@ public:
                 _scopeToFuncitonMap[currentAstFunction->scope()] = _currentFunction->id();
                 currentAstFunction->node()->visit(this);
             }
+            _currentFunction = parentFunction;
         }
 
         node->visitChildren(this);
     }
 
+    //TODO: add native calls
     virtual void visitFunctionNode(FunctionNode *node) {
         uint16_t adjustment = node->parametersNumber() - 1;
         for (uint16_t i = 0; i < node->parametersNumber(); ++i) {
