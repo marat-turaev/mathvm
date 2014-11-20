@@ -147,8 +147,8 @@ public:
         }
         afterTrue.bind(_currentFunction->bytecode()->current());
         if (node->elseBlock()) {
-            pop();
-            pop();
+            pop(); //TODO: maybe no?
+            pop(); //TODO: maybe no?
             node->elseBlock()->visit(this);
             afterFalse.bind(_currentFunction->bytecode()->current());
         }
@@ -181,7 +181,34 @@ public:
     }
 
     virtual void visitFunctionNode(FunctionNode *node) {
-        assert(0);
+        uint16_t adjustment = node->parametersNumber() - 1;
+        for (uint16_t i = 0; i < node->parametersNumber(); ++i) {
+            switch (node->parameterType(adjustment - i)) {
+            case (VT_INVALID): { //for () -> Type functions
+                continue;
+            }
+            case (VT_INT): {
+                emit(BC_STOREIVAR);
+                emitInt16(adjustment - i);
+                break;
+            }
+            case (VT_DOUBLE): {
+                emit(BC_STOREDVAR);
+                emitInt16(adjustment - i);
+                break;
+            }
+            case (VT_STRING): {
+                emit(BC_STORESVAR);
+                emitInt16(adjustment - i);
+                break;
+            }
+            default: {
+                assert(0);
+            }
+            }
+        }
+
+        node->visitChildren(this);
     }
 
     virtual void visitReturnNode(ReturnNode *node) {
@@ -366,15 +393,15 @@ private:
     void pop() {
         emit(BC_POP);
         _typesStack.pop();
-        emit(BC_POP);
-        _typesStack.pop();
     }
 
+    //TODO: push to types stack more consciously.
     void pushInt0() {
         emit(BC_ILOAD0);
         _typesStack.push(VT_INT);
     }
 
+    //TODO: push to types stack more consciously.
     void pushInt1() {
         emit(BC_ILOAD1);
         _typesStack.push(VT_INT);
