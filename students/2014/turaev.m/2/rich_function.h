@@ -17,23 +17,12 @@ public:
         }
     }
 
-    RichFunction *lookupParentFunction(const string &name) {
-        return
-            _local_variables.find(name) == _local_variables.end()
-            ? _parent->lookupParentFunction(name)
-            : this;
-    }
-
-    uint16_t getIndex() {
-        return _index;
-    }
-
     uint16_t getVariableId(const string &name) {
-        return _local_variables[name].second;
+        return _local_variables[name];
     }
 
-    void addLocalVariable(const string &name, VarType type) {
-        _local_variables[name] = std::make_pair(type, _variable_id++);
+    void addLocalVariable(const string &name) {
+        _local_variables[name] =  _variable_id++;
     }
 
     virtual ~RichFunction() {

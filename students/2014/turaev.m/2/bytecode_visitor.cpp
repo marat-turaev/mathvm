@@ -162,7 +162,7 @@ public:
         while (it.hasNext()) {
             AstVar *var = it.next();
             //TODO: this will override value with same name in current fucntion's scope
-            _currentFunction->addLocalVariable(var->name(), var->type());
+            _currentFunction->addLocalVariable(var->name());
         }
 
         //functions:
@@ -235,6 +235,10 @@ private:
         _currentFunction->bytecode()->addInsn(inst);
     }
 
+    void emitInt16(uint16_t value) {
+        _currentFunction->bytecode()->addInt16(value);
+    }
+
     bool convertTOS(VarType toType) {
         switch (toType) {
         case (VT_INT):  {
@@ -281,85 +285,81 @@ private:
     }
 
     void loadVariable(const AstVar *astVar) {
-        VarType type = astVar->type();
-        assert(type == VT_DOUBLE || type == VT_INT || type == VT_STRING);
-        // const string &variableName = astVar->name();
-        // RichFunction *actualFunction = _currentFunction->lookupParentFunction(variableName);
-        // uint16_t variableId = actualFunction->getVariableId(variableName);
-        // uint16_t functionIndex = actualFunction->getIndex();
+        VarType varType = astVar->type();
+        string variableName = astVar->name();
+        assert(varType == VT_DOUBLE || varType == VT_INT || varType == VT_STRING);
 
-        bool is_local = _scopeToFuncitonMap[astVar->owner()] == _currentFunction->id();
+        RichFunction *actualFunction = dynamic_cast<RichFunction *>(_code->functionById(_scopeToFuncitonMap[astVar->owner()]));
+        assert(actualFunction != 0);
 
-        if (type == VT_INT) {
+        bool is_local = actualFunction->id() == _currentFunction->id();
+        uint16_t functionId = actualFunction->id();
+        uint16_t variableId = actualFunction->getVariableId(variableName);
+
+        if (varType == VT_INT) {
             if (is_local) {
                 emit(BC_LOADIVAR);
-                
             } else {
-
+                emit(BC_LOADCTXIVAR);
+                emitInt16(functionId);
             }
-
-            return;
-        }        
-        switch (astVar->type()) {
-        case VT_DOUBLE: {
-            emit(BC_LOADCTXDVAR);
-            _currentFunction->bytecode()->addInt16(functionIndex);
-            _currentFunction->bytecode()->addInt16(variableId);
-            _typesStack.push(VT_DOUBLE);
-            break;
-        }
-        case VT_INT: {
-            emit(BC_LOADCTXIVAR);
-            _currentFunction->bytecode()->addInt16(functionIndex);
-            _currentFunction->bytecode()->addInt16(variableId);
-            _typesStack.push(VT_INT);
-            break;
-        }
-        case VT_STRING: {
-            emit(BC_LOADCTXSVAR);
-            _currentFunction->bytecode()->addInt16(functionIndex);
-            _currentFunction->bytecode()->addInt16(variableId);
-            _typesStack.push(VT_STRING);
-            break;
-        }
-        default: {
-            assert(0);
-        }
+        } else if (varType == VT_DOUBLE) {
+            if (is_local) {
+                emit(BC_LOADDVAR);
+            } else {
+                emit(BC_LOADCTXDVAR);
+                emitInt16(functionId);
+            }
+        } else if (varType == VT_DOUBLE) {
+            if (is_local) {
+                emit(BC_LOADSVAR);
+            } else {
+                emit(BC_LOADCTXSVAR);
+                emitInt16(functionId);
+            }
         }
 
-
+        _typesStack.push(varType);
+        emitInt16(variableId);
     }
 
     void storeToVariable(const AstVar *astVar) {
-        const string &variableName = astVar->name();
-        RichFunction *actualFunction = _currentFunction->lookupParentFunction(variableName);
+        VarType varType = astVar->type();
+        string variableName = astVar->name();
+        assert(varType == VT_DOUBLE || varType == VT_INT || varType == VT_STRING);
+        //ASSUMPTION: no casts when storing variables
+        assert(varType == _typesStack.top());
+
+        RichFunction *actualFunction = dynamic_cast<RichFunction *>(_code->functionById(_scopeToFuncitonMap[astVar->owner()]));
+        assert(actualFunction != 0);
+
+        bool is_local = actualFunction->id() == _currentFunction->id();
+        uint16_t functionId = actualFunction->id();
         uint16_t variableId = actualFunction->getVariableId(variableName);
-        uint16_t functionIndex = actualFunction->getIndex();
 
-        switch (astVar->type()) {
-        case VT_DOUBLE: {
-            convertTOS(VT_DOUBLE);
-            emit(BC_STORECTXDVAR);
-            break;
+        if (varType == VT_INT) {
+            if (is_local) {
+                emit(BC_STOREIVAR);
+            } else {
+                emit(BC_STORECTXIVAR);
+                emitInt16(functionId);
+            }
+        } else if (varType == VT_DOUBLE) {
+            if (is_local) {
+                emit(BC_STOREDVAR);
+            } else {
+                emit(BC_STORECTXDVAR);
+                emitInt16(functionId);
+            }
+        } else if (varType == VT_DOUBLE) {
+            if (is_local) {
+                emit(BC_STORESVAR);
+            } else {
+                emit(BC_STORECTXSVAR);
+                emitInt16(functionId);
+            }
         }
-        case VT_INT: {
-            convertTOS(VT_INT);
-            emit(BC_STORECTXIVAR);
-            break;
-        }
-        case VT_STRING: {
-            assertTOS(VT_STRING);
-            emit(BC_STORECTXSVAR);
-            break;
-        }
-        default: {
-            assert(0);
-        }
-        }
-
-        _currentFunction->bytecode()->addInt16(functionIndex);
-        _currentFunction->bytecode()->addInt16(variableId);
-
+        emitInt16(variableId);
         _typesStack.pop();
     }
 
