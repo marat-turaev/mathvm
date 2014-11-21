@@ -74,20 +74,20 @@ public:
 
     virtual void visitStringLiteralNode(StringLiteralNode *node) {
         uint16_t constantId = _code->makeStringConstant(node->literal());
-        _currentFunction->bytecode()->addInsn(BC_SLOAD);
-        _currentFunction->bytecode()->addInt16(constantId);
+        emit(BC_SLOAD);
+        emitUInt16(constantId);
         _typesStack.push(VT_STRING);
     }
 
     virtual void visitDoubleLiteralNode(DoubleLiteralNode *node) {
-        _currentFunction->bytecode()->addInsn(BC_DLOAD);
-        _currentFunction->bytecode()->addInt64(node->literal());
+        emit(BC_DLOAD);
+        emitDouble(node->literal());
         _typesStack.push(VT_DOUBLE);
     }
 
     virtual void visitIntLiteralNode(IntLiteralNode *node) {
-        _currentFunction->bytecode()->addInsn(BC_ILOAD);
-        _currentFunction->bytecode()->addInt64(node->literal());
+        emit(BC_ILOAD);
+        emitInt64(node->literal());
         _typesStack.push(VT_INT);
     }
 
@@ -135,21 +135,21 @@ public:
 
         pushInt0();
 
-        Label afterTrue(_currentFunction->bytecode());
-        _currentFunction->bytecode()->addBranch(BC_IFICMPE, afterTrue);
+        Label afterTrue(bytecode());
+        bytecode()->addBranch(BC_IFICMPE, afterTrue);
 
         pop();
         pop();
         node->thenBlock()->visit(this);
 
-        Label afterFalse(_currentFunction->bytecode());
+        Label afterFalse(bytecode());
         if (node->elseBlock()) {
-            _currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+            bytecode()->addBranch(BC_JA, afterFalse);
         }
-        afterTrue.bind(_currentFunction->bytecode()->current());
+        afterTrue.bind(bytecode()->current());
         if (node->elseBlock()) {
             node->elseBlock()->visit(this);
-            afterFalse.bind(_currentFunction->bytecode()->current());
+            afterFalse.bind(bytecode()->current());
         }
     }
 
@@ -191,17 +191,17 @@ public:
             }
             case (VT_INT): {
                 emit(BC_STOREIVAR);
-                emitInt16(adjustment - i);
+                emitUInt16(adjustment - i);
                 break;
             }
             case (VT_DOUBLE): {
                 emit(BC_STOREDVAR);
-                emitInt16(adjustment - i);
+                emitUInt16(adjustment - i);
                 break;
             }
             case (VT_STRING): {
                 emit(BC_STORESVAR);
-                emitInt16(adjustment - i);
+                emitUInt16(adjustment - i);
                 break;
             }
             default: {
@@ -222,7 +222,7 @@ public:
         node->visitChildren(this);
         emit(BC_CALL);
         uint16_t functionId = _code->functionByName(node->name())->id();
-        _currentFunction->bytecode()->addInt16(functionId);
+        emitUInt16(functionId);
     }
 
     virtual void visitNativeCallNode(NativeCallNode *node) {
@@ -260,12 +260,24 @@ private:
     map<VarType, map<TokenKind, Instruction> > _typeTokenInstruction;
     map<Scope *, uint16_t> _scopeToFuncitonMap; //TODO: fill
 
-    void emit(Instruction inst) {
-        _currentFunction->bytecode()->addInsn(inst);
+    Bytecode* bytecode() {
+        return _currentFunction->bytecode();
     }
 
-    void emitInt16(uint16_t value) {
-        _currentFunction->bytecode()->addInt16(value);
+    void emit(Instruction inst) {
+        bytecode()->addInsn(inst);
+    }
+
+    void emitUInt16(uint16_t value) {
+        bytecode()->addInt16(value);
+    }
+
+    void emitDouble(double value) {
+        bytecode()->addDouble(value);
+    }
+
+    void emitInt64(int64_t value) {
+        bytecode()->addInt64(value);
     }
 
     bool convertTOS(VarType toType) {
@@ -330,26 +342,26 @@ private:
                 emit(BC_LOADIVAR);
             } else {
                 emit(BC_LOADCTXIVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         } else if (varType == VT_DOUBLE) {
             if (is_local) {
                 emit(BC_LOADDVAR);
             } else {
                 emit(BC_LOADCTXDVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         } else if (varType == VT_DOUBLE) {
             if (is_local) {
                 emit(BC_LOADSVAR);
             } else {
                 emit(BC_LOADCTXSVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         }
 
         _typesStack.push(varType);
-        emitInt16(variableId);
+        emitUInt16(variableId);
     }
 
     void storeToVariable(const AstVar *astVar) {
@@ -371,24 +383,24 @@ private:
                 emit(BC_STOREIVAR);
             } else {
                 emit(BC_STORECTXIVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         } else if (varType == VT_DOUBLE) {
             if (is_local) {
                 emit(BC_STOREDVAR);
             } else {
                 emit(BC_STORECTXDVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         } else if (varType == VT_DOUBLE) {
             if (is_local) {
                 emit(BC_STORESVAR);
             } else {
                 emit(BC_STORECTXSVAR);
-                emitInt16(functionId);
+                emitUInt16(functionId);
             }
         }
-        emitInt16(variableId);
+        emitUInt16(variableId);
         _typesStack.pop();
     }
 
@@ -424,17 +436,17 @@ private:
         _typesStack.pop();
         assert(first == VT_INT && second == VT_INT);
 
-        Label beforeTrue(_currentFunction->bytecode());
-        Label afterTrue(_currentFunction->bytecode());
-        Label afterFalse(_currentFunction->bytecode());
-        _currentFunction->bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
-        _currentFunction->bytecode()->addBranch(BC_JA, afterTrue);
-        beforeTrue.bind(_currentFunction->bytecode()->current());
+        Label beforeTrue(bytecode());
+        Label afterTrue(bytecode());
+        Label afterFalse(bytecode());
+        bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
+        bytecode()->addBranch(BC_JA, afterTrue);
+        beforeTrue.bind(bytecode()->current());
         pushInt1();
-        _currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
-        afterTrue.bind(_currentFunction->bytecode()->current());
+        bytecode()->addBranch(BC_JA, afterFalse);
+        afterTrue.bind(bytecode()->current());
         pushInt0();
-        afterFalse.bind(_currentFunction->bytecode()->current());
+        afterFalse.bind(bytecode()->current());
     }
 
     void binary_logic(BinaryOpNode *node) {
@@ -448,46 +460,46 @@ private:
         case (tAND): {
             //A && B
             //if (A == false) {
-            Label afterTrue(_currentFunction->bytecode());
-            Label afterFalse(_currentFunction->bytecode());
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
             pushInt0();
-            _currentFunction->bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            bytecode()->addBranch(BC_IFICMPNE, afterTrue);
             pop();
             pop();
             pushInt0();
-            _currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+            bytecode()->addBranch(BC_JA, afterFalse);
             //}
             // else {
-            afterTrue.bind(_currentFunction->bytecode()->current());
+            afterTrue.bind(bytecode()->current());
             pop();
             pop();
             //return B;
             node->right()->visit(this);
             assert(_typesStack.top() == VT_INT);
-            afterFalse.bind(_currentFunction->bytecode()->current());
+            afterFalse.bind(bytecode()->current());
             // }
             break;
         }
         case (tOR): {
             //A || B
             //if (A == true) {
-            Label afterTrue(_currentFunction->bytecode());
-            Label afterFalse(_currentFunction->bytecode());
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
             pushInt1();
-            _currentFunction->bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            bytecode()->addBranch(BC_IFICMPNE, afterTrue);
             pop();
             pop();
             pushInt1();
-            _currentFunction->bytecode()->addBranch(BC_JA, afterFalse);
+            bytecode()->addBranch(BC_JA, afterFalse);
             //}
             // else {
-            afterTrue.bind(_currentFunction->bytecode()->current());
+            afterTrue.bind(bytecode()->current());
             pop();
             pop();
             //return B;
             node->right()->visit(this);
             assert(_typesStack.top() == VT_INT);
-            afterFalse.bind(_currentFunction->bytecode()->current());
+            afterFalse.bind(bytecode()->current());
             // }
             break;
         }
