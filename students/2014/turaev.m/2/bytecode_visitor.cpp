@@ -137,14 +137,22 @@ void BytecodeMainVisitor::visitIfNode(IfNode *node) {
                         .If(node->ifExpr())
                         .Then(node->thenBlock());
     if (node->elseBlock()) {
-        ifbuiler.Else(node->elseBlock()).Done();
+        ifbuiler
+        .Else(node->elseBlock())
+        .Done();
     } else {
-        ifbuiler.Done();
+        ifbuiler
+        .Done();
     }
 }
 
 void BytecodeMainVisitor::visitWhileNode(WhileNode *node) {
-    assert(0);
+    Label beginLoop = bytecode()->currentLabel();
+    IfBuilder(this, bytecode())
+    .If(node->whileExpr())
+    .Then(node->loopBlock())
+    .JumpTo(beginLoop)
+    .Done();
 }
 
 void BytecodeMainVisitor::visitForNode(ForNode *node) {
