@@ -132,7 +132,7 @@ public:
     //TODO: re-think assuming binary logic
     virtual void visitIfNode(IfNode *node) {
         node->ifExpr()->visit(this);
-
+        assert(_typesStack.top() == VT_INT);
         pushInt0();
 
         Label afterTrue(bytecode());
@@ -260,10 +260,10 @@ private:
     map<VarType, map<TokenKind, Instruction> > _typeTokenInstruction;
     map<Scope *, uint16_t> _scopeToFuncitonMap; //TODO: fill
 
-    Bytecode* bytecode() {
+    Bytecode *bytecode() {
         return _currentFunction->bytecode();
     }
-
+    
     void emit(Instruction inst) {
         bytecode()->addInsn(inst);
     }
