@@ -1,7 +1,7 @@
 #ifndef IF_BUILDER_H
 #define IF_BUILDER_H
 
-#include "bytecode_visitor.cpp"
+#include "bytecode_visitor.h"
 #include "mathvm.h"
 
 namespace {
@@ -51,6 +51,8 @@ IfStep IfBuilder::If(AstNode *node)  {
     _bytecode->addInsn(BC_ILOAD0);
     Label afterTrue(_bytecode);
     _bytecode->addBranch(BC_IFICMPE, afterTrue);
+    _bytecode->addInsn(BC_POP);
+    _bytecode->addInsn(BC_POP);
     return IfStep(afterTrue, _visitor, _bytecode);
 }
 
@@ -62,6 +64,8 @@ ThenStep IfStep::Then(AstNode *node) {
 
 ElseStep ThenStep::Else(AstNode *node) {
     _bytecode->addBranch(BC_JA, _afterFalseLabel);
+    _bytecode->addInsn(BC_POP);
+    _bytecode->addInsn(BC_POP);
     _afterTrueLabel.bind(_bytecode->current());
     node->visit(_visitor);
     _afterFalseLabel.bind(_bytecode->current());
@@ -70,6 +74,10 @@ ElseStep ThenStep::Else(AstNode *node) {
 
 void ThenStep::Done() {
     _afterTrueLabel.bind(_bytecode->current());
+}
+
+void ElseStep::Done() {
+    return;
 }
 
 #endif
