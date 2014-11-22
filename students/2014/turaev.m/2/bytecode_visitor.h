@@ -75,41 +75,41 @@ private:
 
     bool convertTOS(VarType toType) {
         switch (toType) {
-            case (VT_INT):  {
-                switch (_typesStack.top()) {
-                    case (VT_DOUBLE): {
-                        emit(BC_D2I);
-                        _typesStack.pop();
-                        _typesStack.push(VT_INT);
-                        return true;
-                    }
-                    case (VT_STRING): {
-                        emit(BC_S2I);
-                        _typesStack.pop();
-                        _typesStack.push(VT_INT);
-                        return true;
-                    }
-                    default: {
-                        return false;
-                    }
-                }
-            }
+        case (VT_INT):  {
+            switch (_typesStack.top()) {
             case (VT_DOUBLE): {
-                switch (_typesStack.top()) {
-                    case (VT_INT): {
-                        emit(BC_I2D);
-                        _typesStack.pop();
-                        _typesStack.push(VT_DOUBLE);
-                        return true;
-                    }
-                    default: {
-                        return false;
-                    }
-                }
+                emit(BC_D2I);
+                _typesStack.pop();
+                _typesStack.push(VT_INT);
+                return true;
+            }
+            case (VT_STRING): {
+                emit(BC_S2I);
+                _typesStack.pop();
+                _typesStack.push(VT_INT);
+                return true;
             }
             default: {
                 return false;
             }
+            }
+        }
+        case (VT_DOUBLE): {
+            switch (_typesStack.top()) {
+            case (VT_INT): {
+                emit(BC_I2D);
+                _typesStack.pop();
+                _typesStack.push(VT_DOUBLE);
+                return true;
+            }
+            default: {
+                return false;
+            }
+            }
+        }
+        default: {
+            return false;
+        }
         }
         return false;
     }
@@ -215,10 +215,10 @@ private:
     }
 
     //TODO: Implement for DOUBLES too (now only for INTs)
-    void binary_comparsion(BinaryOpNode *node) {
+    void binary_comparison(BinaryOpNode *node) {
         TokenKind operation = node->kind();
         assert(operation == tEQ || operation == tNEQ ||  operation == tGT
-                || operation == tGE || operation == tLT || operation == tLE);
+               || operation == tGE || operation == tLT || operation == tLE);
 
         node->left()->visit(this);
         node->right()->visit(this);
@@ -250,55 +250,55 @@ private:
         assert(_typesStack.top() == VT_INT);
 
         switch (operation) {
-            case (tAND): {
-                //A && B
-                //if (A == false) {
-                Label afterTrue(bytecode());
-                Label afterFalse(bytecode());
-                pushInt0();
-                bytecode()->addBranch(BC_IFICMPNE, afterTrue);
-                pop();
-                pop();
-                pushInt0();
-                bytecode()->addBranch(BC_JA, afterFalse);
-                //}
-                // else {
-                afterTrue.bind(bytecode()->current());
-                pop();
-                pop();
-                //return B;
-                node->right()->visit(this);
-                assert(_typesStack.top() == VT_INT);
-                afterFalse.bind(bytecode()->current());
-                // }
-                break;
-            }
-            case (tOR): {
-                //A || B
-                //if (A == true) {
-                Label afterTrue(bytecode());
-                Label afterFalse(bytecode());
-                pushInt1();
-                bytecode()->addBranch(BC_IFICMPNE, afterTrue);
-                pop();
-                pop();
-                pushInt1();
-                bytecode()->addBranch(BC_JA, afterFalse);
-                //}
-                // else {
-                afterTrue.bind(bytecode()->current());
-                pop();
-                pop();
-                //return B;
-                node->right()->visit(this);
-                assert(_typesStack.top() == VT_INT);
-                afterFalse.bind(bytecode()->current());
-                // }
-                break;
-            }
-            default: {
-                assert(0);
-            }
+        case (tAND): {
+            //A && B
+            //if (A == false) {
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
+            pushInt0();
+            bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            pop();
+            pop();
+            pushInt0();
+            bytecode()->addBranch(BC_JA, afterFalse);
+            //}
+            // else {
+            afterTrue.bind(bytecode()->current());
+            pop();
+            pop();
+            //return B;
+            node->right()->visit(this);
+            assert(_typesStack.top() == VT_INT);
+            afterFalse.bind(bytecode()->current());
+            // }
+            break;
+        }
+        case (tOR): {
+            //A || B
+            //if (A == true) {
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
+            pushInt1();
+            bytecode()->addBranch(BC_IFICMPNE, afterTrue);
+            pop();
+            pop();
+            pushInt1();
+            bytecode()->addBranch(BC_JA, afterFalse);
+            //}
+            // else {
+            afterTrue.bind(bytecode()->current());
+            pop();
+            pop();
+            //return B;
+            node->right()->visit(this);
+            assert(_typesStack.top() == VT_INT);
+            afterFalse.bind(bytecode()->current());
+            // }
+            break;
+        }
+        default: {
+            assert(0);
+        }
         }
     }
 
@@ -309,148 +309,149 @@ private:
         _typesStack.pop();
 
         switch (first) {
+        case (VT_DOUBLE): {
+            switch (second) {
             case (VT_DOUBLE): {
-                switch (second) {
-                    case (VT_DOUBLE): {
-                        switch (operation) {
-                            case (tADD):
-                            case (tSUB):
-                            case (tMUL):
-                            case (tDIV): {
-                                emit(_typeTokenInstruction[VT_DOUBLE][operation]);
-                                break;
-                            }
-                            default: {
-                                assert(0);
-                            }
-                        }
-                        _typesStack.push(VT_DOUBLE);
-                        break;
-                    }
-                    case (VT_INT): {
-                        emit(BC_SWAP);
-                        _typesStack.push(VT_INT);
-                        convertTOS(VT_DOUBLE);
-                        _typesStack.pop();
-                        emit(BC_SWAP);
-
-                        switch (operation) {
-                            case (tADD):
-                            case (tSUB):
-                            case (tMUL):
-                            case (tDIV): {
-                                emit(_typeTokenInstruction[VT_DOUBLE][operation]);
-                                break;
-                            }
-                            default: {
-                                assert(0);
-                            }
-                        }
-
-                        _typesStack.push(VT_DOUBLE);
-                        break;
-                    }
-                    default: {
-                        assert(0);
-                    }
+                switch (operation) {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
+                    emit(_typeTokenInstruction[VT_DOUBLE][operation]);
+                    break;
                 }
+                default: {
+                    assert(0);
+                }
+                }
+                _typesStack.push(VT_DOUBLE);
                 break;
             }
             case (VT_INT): {
-                switch (second) {
-                    case (VT_DOUBLE): {
-                        _typesStack.push(VT_INT);
-                        convertTOS(VT_DOUBLE);
-                        _typesStack.pop();
-                        switch (operation) {
-                            case (tADD):
-                            case (tSUB):
-                            case (tMUL):
-                            case (tDIV): {
-                                emit(_typeTokenInstruction[VT_DOUBLE][operation]);
-                                break;
-                            }
-                            default: {
-                                assert(0);
-                            }
-                        }
-                        _typesStack.push(VT_DOUBLE);
-                        break;
-                    }
-                    case (VT_INT): {
-                        switch (operation) {
-                            case (tADD):
-                            case (tSUB):
-                            case (tMUL):
-                            case (tDIV):
-                            case (tAAND):
-                            case (tAOR):
-                            case (tAXOR): {
-                                emit(_typeTokenInstruction[VT_INT][operation]);
-                                break;
-                            }
-                            default: {
-                                assert(0);
-                            }
-                        }
-                        _typesStack.push(VT_INT);
-                        break;
-                    }
-                    default: {
-                        assert(0);
-                    }
+                emit(BC_SWAP);
+                _typesStack.push(VT_INT);
+                convertTOS(VT_DOUBLE);
+                _typesStack.pop();
+                emit(BC_SWAP);
+
+                switch (operation) {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
+                    emit(_typeTokenInstruction[VT_DOUBLE][operation]);
+                    break;
                 }
+                default: {
+                    assert(0);
+                }
+                }
+
+                _typesStack.push(VT_DOUBLE);
                 break;
             }
             default: {
                 assert(0);
             }
+            }
+            break;
+        }
+        case (VT_INT): {
+            switch (second) {
+            case (VT_DOUBLE): {
+                _typesStack.push(VT_INT);
+                convertTOS(VT_DOUBLE);
+                _typesStack.pop();
+                switch (operation) {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV): {
+                    emit(_typeTokenInstruction[VT_DOUBLE][operation]);
+                    break;
+                }
+                default: {
+                    assert(0);
+                }
+                }
+                _typesStack.push(VT_DOUBLE);
+                break;
+            }
+            case (VT_INT): {
+                switch (operation) {
+                case (tADD):
+                case (tSUB):
+                case (tMUL):
+                case (tDIV):
+                case (tAAND):
+                case (tAOR):
+                case (tAXOR):
+                case (tMOD): {
+                    emit(_typeTokenInstruction[VT_INT][operation]);
+                    break;
+                }
+                default: {
+                    assert(0);
+                }
+                }
+                _typesStack.push(VT_INT);
+                break;
+            }
+            default: {
+                assert(0);
+            }
+            }
+            break;
+        }
+        default: {
+            assert(0);
+        }
         }
     }
 
     void unary_math(TokenKind operation) {
         switch (_typesStack.top()) {
-            case (VT_DOUBLE): {
-                switch (operation) {
-                    case (tSUB): {
-                        emit(BC_DLOAD0);
-                        _typesStack.push(VT_DOUBLE);
-                        binary_math(tSUB);
-                        break;
-                    }
-                    case (tNOT): {
-                        emit(BC_DNEG);
-                        break;
-                    }
-                    default: {
-                        assert(0);
-                    }
-                }
+        case (VT_DOUBLE): {
+            switch (operation) {
+            case (tSUB): {
+                emit(BC_DLOAD0);
+                _typesStack.push(VT_DOUBLE);
+                binary_math(tSUB);
                 break;
             }
-
-            case (VT_INT): {
-                switch (operation) {
-                    case (tSUB): {
-                        emit(BC_ILOAD0);
-                        _typesStack.push(VT_INT);
-                        binary_math(tSUB);
-                        break;
-                    }
-                    case (tNOT): {
-                        emit(BC_INEG);
-                        break;
-                    }
-                    default: {
-                        assert(0);
-                    }
-                }
+            case (tNOT): {
+                emit(BC_DNEG);
                 break;
             }
-
             default: {
                 assert(0);
             }
+            }
+            break;
+        }
+
+        case (VT_INT): {
+            switch (operation) {
+            case (tSUB): {
+                emit(BC_ILOAD0);
+                _typesStack.push(VT_INT);
+                binary_math(tSUB);
+                break;
+            }
+            case (tNOT): {
+                emit(BC_INEG);
+                break;
+            }
+            default: {
+                assert(0);
+            }
+            }
+            break;
+        }
+
+        default: {
+            assert(0);
+        }
         }
     }
 };

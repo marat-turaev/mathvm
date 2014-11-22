@@ -34,9 +34,8 @@ private:
 public:
     ThenStep(Label afterFalseLabel, Label afterTrueLabel, BytecodeMainVisitor *visitor, Bytecode *bytecode): IfBuilder(visitor, bytecode), _afterTrueLabel(afterTrueLabel), _afterFalseLabel(afterFalseLabel) {};
     ElseStep Else(AstNode *);
-    ThenStep &AfterThen(Instruction);
-    ThenStep &AfterThen(uint16_t uint16);
-    ThenStep &JumpTo(Label &label);
+    ThenStep &ThenJumpTo(Label &label);
+    ThenStep &ThenVisit(AstNode &node);
     void Done();
 };
 class ElseStep: public IfBuilder {
@@ -75,18 +74,13 @@ ElseStep ThenStep::Else(AstNode *node) {
     return ElseStep(_afterFalseLabel, _afterTrueLabel, _visitor, _bytecode);
 }
 
-ThenStep &ThenStep::AfterThen(Instruction instruction) {
-    _bytecode->addInsn(instruction);
-    return *this;
-}
-
-ThenStep &ThenStep::AfterThen(uint16_t uint16) {
-    _bytecode->addUInt16(uint16);
-    return *this;
-}
-
-ThenStep &ThenStep::JumpTo(Label &label) {
+ThenStep &ThenStep::ThenJumpTo(Label &label) {
     _bytecode->addBranch(BC_JA, label);
+    return *this;
+}
+
+ThenStep &ThenStep::ThenVisit(AstNode &node) {
+    node.visit(_visitor);
     return *this;
 }
 

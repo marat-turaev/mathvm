@@ -104,6 +104,8 @@ void BytecodeMainVisitor::visitFunctionNode(FunctionNode *node) {
     node->visitChildren(this);
 }
 
+
+//TODO: refactor this method
 void BytecodeMainVisitor::visitBlockNode(BlockNode *node) {
     _scopeToFunctionMap[node->scope()] = _currentFunction->id();
 
@@ -133,15 +135,15 @@ void BytecodeMainVisitor::visitBlockNode(BlockNode *node) {
 }
 
 void BytecodeMainVisitor::visitIfNode(IfNode *node) {
-    ThenStep ifbuiler = IfBuilder(this, bytecode())
-                        .If(node->ifExpr())
-                        .Then(node->thenBlock());
+    ThenStep ifBuilder = IfBuilder(this, bytecode())
+                         .If(node->ifExpr())
+                         .Then(node->thenBlock());
     if (node->elseBlock()) {
-        ifbuiler
+        ifBuilder
         .Else(node->elseBlock())
         .Done();
     } else {
-        ifbuiler
+        ifBuilder
         .Done();
     }
 }
@@ -151,12 +153,37 @@ void BytecodeMainVisitor::visitWhileNode(WhileNode *node) {
     IfBuilder(this, bytecode())
     .If(node->whileExpr())
     .Then(node->loopBlock())
-    .JumpTo(beginLoop)
+    .ThenJumpTo(beginLoop)
     .Done();
 }
 
 void BytecodeMainVisitor::visitForNode(ForNode *node) {
-    assert(0);
+    BinaryOpNode *range = dynamic_cast<BinaryOpNode *>(node->inExpr());
+    assert(range);
+    assert(range->kind() == tRANGE);
+    AstNode *leftNode = range->left();
+    AstNode *rightNode = range->right();
+    const AstVar *astVar = node->var();
+    // TODO: Unary minus might be part of range
+    // assert(dynamic_cast<LoadNode *>(leftNode) != 0 || dynamic_cast<IntLiteralNode *>(leftNode) != 0);
+    // assert(dynamic_cast<LoadNode *>(rightNode) != 0 || dynamic_cast<IntLiteralNode *>(rightNode) != 0);
+
+    StoreNode store(0, astVar, leftNode, tASSIGN);
+    IntLiteralNode oneLiteral(0, (uint64_t)1);
+    StoreNode increment(0, astVar, &oneLiteral, tINCRSET);
+    LoadNode loadVar(0, astVar);
+    BinaryOpNode greaterEqCondition(0, tGE, &loadVar, leftNode);
+    BinaryOpNode lessEqCondition(0, tGE, &loadVar, rightNode);
+    BinaryOpNode condition(0, tAND, &greaterEqCondition, &lessEqCondition);
+
+    store.visit(this);
+    Label beginLoop = bytecode()->currentLabel();
+    IfBuilder(this, bytecode())
+    .If(&condition)
+    .Then(node->body())
+    .ThenVisit(increment)
+    .ThenJumpTo(beginLoop)
+    .Done();
 }
 
 void BytecodeMainVisitor::visitStoreNode(StoreNode *node) {
@@ -224,7 +251,8 @@ void BytecodeMainVisitor::visitBinaryOpNode(BinaryOpNode *node) {
     case (tADD):
     case (tSUB):
     case (tMUL):
-    case (tDIV): {
+    case (tDIV):
+    case (tMOD): {
         node->right()->visit(this);
         node->left()->visit(this);
         binary_math(node->kind());
@@ -236,7 +264,7 @@ void BytecodeMainVisitor::visitBinaryOpNode(BinaryOpNode *node) {
     case (tGE):
     case (tLT):
     case (tLE): {
-        binary_comparsion(node);
+        binary_comparison(node);
         break;
     }
     default: {
