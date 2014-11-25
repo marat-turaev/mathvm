@@ -10,9 +10,19 @@ using namespace std;
 namespace mathvm {
 class InterpreterCodeImpl: public Code {
     map<Instruction, uint32_t> instrSize;
-    stack<uint16_t> stringStack;
-    stack<int64_t> intStack;
-    stack<double> doubleStack;
+    stack<uint64_t> argsStack;
+
+    template <typename T>
+    void push(T val) {        
+        argsStack.push((uint64_t)val);
+    }
+
+    template <typename T>
+    T pop() {        
+        T res = (T)argsStack.top();
+        argsStack.pop();
+        return res;
+    }
 
     void setSizes() {
 #define SET_SIZE(b, d, l) instrSize[BC_##b] = l;
@@ -36,144 +46,144 @@ public:
             switch (current) {
                 //TODO assert that stack same size before and after execution
                 case BC_DLOAD: {
-                    doubleStack.push(bytecode->getDouble(ip + 1));
+                    argsStack.push(bytecode->getDouble(ip + 1));
                     break;
                 }
                 case BC_ILOAD: {
-                    intStack.push(bytecode->getInt64(ip + 1));
+                    argsStack.push(bytecode->getInt64(ip + 1));
                     break;
                 }
                 case BC_SLOAD: {
-                    stringStack.push(bytecode->getUInt16(ip + 1));
+                    argsStack.push(bytecode->getUInt16(ip + 1));
                     break;
                 }
                 case BC_ILOAD0: {
-                    intStack.push(0);
+                    argsStack.push(0);
                     break;
                 }
                 case BC_DADD: {
-                    double left = doubleStack.top();
-                    doubleStack.pop();
-                    double right = doubleStack.top();
-                    doubleStack.pop();
-                    doubleStack.push(left + right);
+                    double left = argsStack.top();
+                    argsStack.pop();
+                    double right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left + right);
                     break;
                 }
                 case BC_IADD: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left + right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left + right);
                     break;
                 }
                 case BC_DSUB: {
-                    double left = doubleStack.top();
-                    doubleStack.pop();
-                    double right = doubleStack.top();
-                    doubleStack.pop();
-                    doubleStack.push(left - right);
+                    double left = argsStack.top();
+                    argsStack.pop();
+                    double right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left - right);
                     break;
                 }
                 case BC_ISUB: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left - right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left - right);
                     break;
                 }
                 case BC_DMUL: {
-                    double left = doubleStack.top();
-                    doubleStack.pop();
-                    double right = doubleStack.top();
-                    doubleStack.pop();
-                    doubleStack.push(left * right);
+                    double left = argsStack.top();
+                    argsStack.pop();
+                    double right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left * right);
                     break;
                 }
                 case BC_IMUL: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left * right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left * right);
                     break;
                 }
                 case BC_DDIV: {
-                    double left = doubleStack.top();
-                    doubleStack.pop();
-                    double right = doubleStack.top();
-                    doubleStack.pop();
-                    doubleStack.push(left / right);
+                    double left = argsStack.top();
+                    argsStack.pop();
+                    double right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left / right);
                     break;
                 }
                 case BC_IDIV: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left / right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left / right);
                     break;
                 }
                 case BC_IMOD: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left % right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left % right);
                     break;
                 }
                 case BC_DNEG: {
-                    double left = doubleStack.top();
-                    doubleStack.pop();
-                    doubleStack.push(-left);
+                    double left = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(-left);
                     break;
                 }
                 case BC_INEG: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    intStack.push(-left);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(-left);
                     break;
                 }
                 case BC_IAOR: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left | right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left | right);
                     break;
                 }
                 case BC_IAAND: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left & right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left & right);
                     break;
                 }
                 case BC_IAXOR: {
-                    int64_t left = intStack.top();
-                    intStack.pop();
-                    int64_t right = intStack.top();
-                    intStack.pop();
-                    intStack.push(left ^ right);
+                    int64_t left = argsStack.top();
+                    argsStack.pop();
+                    int64_t right = argsStack.top();
+                    argsStack.pop();
+                    argsStack.push(left ^ right);
                     break;
                 }
                 case BC_IPRINT: {
-                    int64_t arg = intStack.top();
-                    intStack.pop();
+                    int64_t arg = argsStack.top();
+                    argsStack.pop();
                     cout << arg;
                     break;
                 }
                 case BC_DPRINT: {
-                    double arg = doubleStack.top();
-                    doubleStack.pop();
+                    double arg = argsStack.top();
+                    argsStack.pop();
                     cout << arg;
                     break;
                 }
                 case BC_SPRINT: {
-                    uint16_t arg = stringStack.top();
-                    stringStack.pop();
+                    uint16_t arg = argsStack.top();
+                    argsStack.pop();
                     cout << constantById(arg);
                     break;
                 }
