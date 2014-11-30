@@ -35,9 +35,12 @@ class InterpreterCodeImpl: public Code {
     }
 
 public:
-    virtual Status *execute(vector<Var *> &vars) {
+    virtual Status *execute(vector<Var *> &) {
         setSizes();
 
+        BytecodeFunction *mainFunction = dynamic_cast<BytecodeFunction *>(this->functionById(0));
+        vars[0].push(vector<uint64_t>(mainFunction->localsNumber()));
+        executeFunction(mainFunction);
         return Status::Ok();
     }
 
@@ -64,6 +67,10 @@ public:
                 }
                 case BC_ILOAD0: {
                     push(0);
+                    break;
+                }
+                case BC_ILOAD1: {
+                    push(1);
                     break;
                 }
                 case BC_DADD: {
@@ -255,25 +262,25 @@ public:
                 }
                 case BC_LOADCTXDVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_LOADCTXIVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_LOADCTXSVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_STORECTXDVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     double value = top<double>();
                     pop();
                     vars[contextId].top()[varId] = value;
@@ -281,7 +288,7 @@ public:
                 }
                 case BC_STORECTXIVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     int64_t value = top<int64_t>();
                     pop();
                     vars[contextId].top()[varId] = value;
@@ -289,7 +296,7 @@ public:
                 }
                 case BC_STORECTXSVAR: {
                     uint16_t contextId = bytecode->getUInt16(ip + 1);
-                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 3);
                     uint16_t value = top<uint16_t>();
                     pop();
                     vars[contextId].top()[varId] = value;
@@ -313,7 +320,8 @@ public:
                 }
                 case BC_JA: {
                     uint16_t offset = bytecode->getUInt16(ip + 1);
-                    ip += offset;
+                    ip += offset + 1;
+                    continue;
                     break;
                 }
                 case BC_IFICMPNE: {
@@ -322,7 +330,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left != right ? offset : 0;
+                    if (left != right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_IFICMPE: {
@@ -331,7 +342,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left == right ? offset : 0;
+                    if (left == right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_IFICMPG: {
@@ -340,7 +354,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left > right ? offset : 0;
+                    if (left > right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_IFICMPGE: {
@@ -349,7 +366,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left >= right ? offset : 0;
+                    if (left >= right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_IFICMPL: {
@@ -358,7 +378,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left < right ? offset : 0;
+                    if (left < right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_IFICMPLE: {
@@ -367,7 +390,10 @@ public:
                     pop();
                     int64_t right = top<int64_t>();
                     pop();
-                    ip += left <= right ? offset : 0;
+                    if (left <= right) {
+                        ip += offset + 1;
+                        continue;
+                    }
                     break;
                 }
                 case BC_STOP: {
@@ -375,9 +401,9 @@ public:
                 }
                 case BC_CALL: {
                     uint16_t calledFunctionId = bytecode->getUInt16(ip + 1);
-                    //TODO: FIX
-                    vars[calledFunctionId].push(vector<uint64_t>(666));
-                    executeFunction(dynamic_cast<BytecodeFunction *>(this->functionById(calledFunctionId)));
+                    BytecodeFunction *calledFunction = dynamic_cast<BytecodeFunction *>(this->functionById(calledFunctionId));
+                    vars[calledFunctionId].push(vector<uint64_t>(calledFunction->localsNumber()));
+                    executeFunction(calledFunction);
                     break;
                 }
                 case BC_CALLNATIVE: {
@@ -386,9 +412,11 @@ public:
                 }
                 case BC_RETURN: {
                     vars[functionId].pop();
+                    return;
                     break;
                 }
                 default: {
+                    cout << "UNKNOWN: "  << current << endl;
                     assert(0);
                 }
             }

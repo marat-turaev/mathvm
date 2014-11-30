@@ -258,15 +258,11 @@ private:
             Label afterFalse(bytecode());
             pushInt0();
             bytecode()->addBranch(BC_IFICMPNE, afterTrue);
-            pop();
-            pop();
             pushInt0();
             bytecode()->addBranch(BC_JA, afterFalse);
             //}
             // else {
             afterTrue.bind(bytecode()->current());
-            pop();
-            pop();
             //return B;
             node->right()->visit(this);
             assert(_typesStack.top() == VT_INT);
@@ -281,15 +277,11 @@ private:
             Label afterFalse(bytecode());
             pushInt1();
             bytecode()->addBranch(BC_IFICMPNE, afterTrue);
-            pop();
-            pop();
             pushInt1();
             bytecode()->addBranch(BC_JA, afterFalse);
             //}
             // else {
             afterTrue.bind(bytecode()->current());
-            pop();
-            pop();
             //return B;
             node->right()->visit(this);
             assert(_typesStack.top() == VT_INT);

@@ -22,7 +22,7 @@ BytecodeMainVisitor::BytecodeMainVisitor(Code *code, AstFunction *topFunction) :
     _typeTokenInstruction[VT_INT][tDIV] = BC_IDIV;
 
     _typeTokenInstruction[VT_INT][tAOR] = BC_IAOR;
-    _typeTokenInstruction[VT_INT][tAND] = BC_IAAND;
+    _typeTokenInstruction[VT_INT][tAAND] = BC_IAAND;
     _typeTokenInstruction[VT_INT][tAXOR] = BC_IAXOR;
 
     _typeTokenInstruction[VT_INT][tEQ] = BC_IFICMPE;
@@ -42,11 +42,11 @@ void BytecodeMainVisitor::visitPrintNode(PrintNode *node) {
                 break;
             }
             case VT_INT: {
-                emit(BC_DPRINT);
+                emit(BC_IPRINT);
                 break;
             }
             case VT_STRING: {
-                emit(BC_DPRINT);
+                emit(BC_SPRINT);
                 break;
             }
             default: {
@@ -252,7 +252,10 @@ void BytecodeMainVisitor::visitBinaryOpNode(BinaryOpNode *node) {
         case (tSUB):
         case (tMUL):
         case (tDIV):
-        case (tMOD): {
+        case (tMOD):
+        case (tAOR):
+        case (tAXOR):
+        case (tAAND): {
             node->right()->visit(this);
             node->left()->visit(this);
             binary_math(node->kind());
