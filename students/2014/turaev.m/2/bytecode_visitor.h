@@ -215,6 +215,7 @@ private:
     }
 
     //TODO: Implement for DOUBLES too (now only for INTs)
+    //TODO: Refactor using builder
     void binary_comparison(BinaryOpNode *node) {
         TokenKind operation = node->kind();
         assert(operation == tEQ || operation == tNEQ ||  operation == tGT

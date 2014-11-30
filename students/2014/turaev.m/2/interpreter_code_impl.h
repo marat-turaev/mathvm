@@ -11,17 +11,21 @@ namespace mathvm {
 class InterpreterCodeImpl: public Code {
     map<Instruction, uint32_t> instrSize;
     stack<uint64_t> argsStack;
+    map<uint16_t, stack<vector<uint64_t> > > vars; // fun_id -> stack [value]
 
     template <typename T>
-    void push(T val) {        
+    void push(T val) {
         argsStack.push((uint64_t)val);
     }
 
     template <typename T>
-    T pop() {        
+    T top() {
         T res = (T)argsStack.top();
-        argsStack.pop();
         return res;
+    }
+
+    void pop() {
+        argsStack.pop();
     }
 
     void setSizes() {
@@ -40,363 +44,340 @@ public:
     void executeFunction(BytecodeFunction *function) {
         uint32_t ip = 0;
         Bytecode *bytecode = function->bytecode();
+        uint16_t functionId = function->id();
         while (ip != bytecode->length()) {
             Instruction current = bytecode->getInsn(ip);
 
             switch (current) {
                 //TODO assert that stack same size before and after execution
                 case BC_DLOAD: {
-                    argsStack.push(bytecode->getDouble(ip + 1));
+                    push(bytecode->getDouble(ip + 1));
                     break;
                 }
                 case BC_ILOAD: {
-                    argsStack.push(bytecode->getInt64(ip + 1));
+                    push(bytecode->getInt64(ip + 1));
                     break;
                 }
                 case BC_SLOAD: {
-                    argsStack.push(bytecode->getUInt16(ip + 1));
+                    push(bytecode->getUInt16(ip + 1));
                     break;
                 }
                 case BC_ILOAD0: {
-                    argsStack.push(0);
+                    push(0);
                     break;
                 }
                 case BC_DADD: {
-                    double left = argsStack.top();
-                    argsStack.pop();
-                    double right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left + right);
+                    double left = top<double>();
+                    pop();
+                    double right = top<double>();
+                    pop();
+                    push(left + right);
                     break;
                 }
                 case BC_IADD: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left + right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left + right);
                     break;
                 }
                 case BC_DSUB: {
-                    double left = argsStack.top();
-                    argsStack.pop();
-                    double right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left - right);
+                    double left = top<double>();
+                    pop();
+                    double right = top<double>();
+                    pop();
+                    push(left - right);
                     break;
                 }
                 case BC_ISUB: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left - right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left - right);
                     break;
                 }
                 case BC_DMUL: {
-                    double left = argsStack.top();
-                    argsStack.pop();
-                    double right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left * right);
+                    double left = top<double>();
+                    pop();
+                    double right = top<double>();
+                    pop();
+                    push(left * right);
                     break;
                 }
                 case BC_IMUL: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left * right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left * right);
                     break;
                 }
                 case BC_DDIV: {
-                    double left = argsStack.top();
-                    argsStack.pop();
-                    double right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left / right);
+                    double left = top<double>();
+                    pop();
+                    double right = top<double>();
+                    pop();
+                    push(left / right);
                     break;
                 }
                 case BC_IDIV: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left / right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left / right);
                     break;
                 }
                 case BC_IMOD: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left % right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left % right);
                     break;
                 }
                 case BC_DNEG: {
-                    double left = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(-left);
+                    double left = top<double>();
+                    pop();
+                    push(-left);
                     break;
                 }
                 case BC_INEG: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(-left);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    push(-left);
                     break;
                 }
                 case BC_IAOR: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left | right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left | right);
                     break;
                 }
                 case BC_IAAND: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left & right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left & right);
                     break;
                 }
                 case BC_IAXOR: {
-                    int64_t left = argsStack.top();
-                    argsStack.pop();
-                    int64_t right = argsStack.top();
-                    argsStack.pop();
-                    argsStack.push(left ^ right);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left ^ right);
                     break;
                 }
                 case BC_IPRINT: {
-                    int64_t arg = argsStack.top();
-                    argsStack.pop();
+                    int64_t arg = top<int64_t>();
+                    pop();
                     cout << arg;
                     break;
                 }
                 case BC_DPRINT: {
-                    double arg = argsStack.top();
-                    argsStack.pop();
+                    double arg = top<double>();
+                    pop();
                     cout << arg;
                     break;
                 }
                 case BC_SPRINT: {
-                    uint16_t arg = argsStack.top();
-                    argsStack.pop();
+                    uint16_t arg = top<uint16_t>();
+                    pop();
                     cout << constantById(arg);
                     break;
                 }
                 case BC_I2D: {
-                    assert(0);
+                    int64_t arg = top<int64_t>();
+                    pop();
+                    push((double)arg);
                     break;
                 }
                 case BC_D2I: {
-                    assert(0);
-                    break;
-                }
-                case BC_S2I: {
-                    assert(0);
+                    double arg = top<double>();
+                    pop();
+                    push((int64_t)arg);
                     break;
                 }
                 case BC_SWAP: {
-                    assert(0);
+                    uint64_t arg1 = top<uint64_t>();
+                    pop();
+                    uint64_t arg2 = top<uint64_t>();
+                    pop();
+                    push(arg1);
+                    push(arg2);
                     break;
                 }
                 case BC_POP: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADDVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADDVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADDVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADDVAR3: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADIVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADIVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADIVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADIVAR3: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADSVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADSVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADSVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_LOADSVAR3: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREDVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREDVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREDVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREDVAR3: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREIVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREIVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREIVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_STOREIVAR3: {
-                    assert(0);
-                    break;
-                }
-                case BC_STORESVAR0: {
-                    assert(0);
-                    break;
-                }
-                case BC_STORESVAR1: {
-                    assert(0);
-                    break;
-                }
-                case BC_STORESVAR2: {
-                    assert(0);
-                    break;
-                }
-                case BC_STORESVAR3: {
-                    assert(0);
+                    pop();
                     break;
                 }
                 case BC_LOADDVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    push(vars[functionId].top()[varId]);
                     break;
                 }
                 case BC_LOADIVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    push(vars[functionId].top()[varId]);
                     break;
                 }
                 case BC_LOADSVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    push(vars[functionId].top()[varId]);
                     break;
                 }
                 case BC_STOREDVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    double value = top<double>();
+                    pop();
+                    vars[functionId].top()[varId] = value;
                     break;
                 }
                 case BC_STOREIVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    int64_t value = top<int64_t>();
+                    pop();
+                    vars[functionId].top()[varId] = value;
                     break;
                 }
                 case BC_STORESVAR: {
-                    assert(0);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    uint16_t value = top<uint16_t>();
+                    pop();
+                    vars[functionId].top()[varId] = value;
                     break;
                 }
                 case BC_LOADCTXDVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_LOADCTXIVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_LOADCTXSVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 2);
+                    push(vars[contextId].top()[varId]);
                     break;
                 }
                 case BC_STORECTXDVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    double value = top<double>();
+                    pop();
+                    vars[contextId].top()[varId] = value;
                     break;
                 }
                 case BC_STORECTXIVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    int64_t value = top<int64_t>();
+                    pop();
+                    vars[contextId].top()[varId] = value;
                     break;
                 }
                 case BC_STORECTXSVAR: {
-                    assert(0);
+                    uint16_t contextId = bytecode->getUInt16(ip + 1);
+                    uint16_t varId = bytecode->getUInt16(ip + 1);
+                    uint16_t value = top<uint16_t>();
+                    pop();
+                    vars[contextId].top()[varId] = value;
                     break;
                 }
                 case BC_DCMP: {
-                    assert(0);
+                    double left = top<double>();
+                    pop();
+                    double right = top<double>();
+                    pop();
+                    push(left < right ? -1 : left == right ? 0 : 1);
                     break;
                 }
                 case BC_ICMP: {
-                    assert(0);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    push(left < right ? -1 : left == right ? 0 : 1);
                     break;
                 }
                 case BC_JA: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    ip += offset;
                     break;
                 }
                 case BC_IFICMPNE: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left != right ? offset : 0;
                     break;
                 }
                 case BC_IFICMPE: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left == right ? offset : 0;
                     break;
                 }
                 case BC_IFICMPG: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left > right ? offset : 0;
                     break;
                 }
                 case BC_IFICMPGE: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left >= right ? offset : 0;
                     break;
                 }
                 case BC_IFICMPL: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left < right ? offset : 0;
                     break;
                 }
                 case BC_IFICMPLE: {
-                    assert(0);
-                    break;
-                }
-                case BC_DUMP: {
-                    assert(0);
+                    uint16_t offset = bytecode->getUInt16(ip + 1);
+                    int64_t left = top<int64_t>();
+                    pop();
+                    int64_t right = top<int64_t>();
+                    pop();
+                    ip += left <= right ? offset : 0;
                     break;
                 }
                 case BC_STOP: {
-                    assert(0);
                     break;
                 }
                 case BC_CALL: {
-                    assert(0);
+                    uint16_t calledFunctionId = bytecode->getUInt16(ip + 1);
+                    //TODO: FIX
+                    vars[calledFunctionId].push(vector<uint64_t>(666));
+                    executeFunction(dynamic_cast<BytecodeFunction *>(this->functionById(calledFunctionId)));
                     break;
                 }
                 case BC_CALLNATIVE: {
@@ -404,14 +385,9 @@ public:
                     break;
                 }
                 case BC_RETURN: {
-                    assert(0);
+                    vars[functionId].pop();
                     break;
                 }
-                case BC_BREAK: {
-                    assert(0);
-                    break;
-                }
-
                 default: {
                     assert(0);
                 }
