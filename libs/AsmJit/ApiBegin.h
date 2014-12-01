@@ -1,43 +1,49 @@
-// AsmJit - Complete JIT Assembler for C++ Language.
-
-// Copyright (c) 2008-2010, Petr Kobalicek <kobalicek.petr@gmail.com>
+// [AsmJit]
+// Complete x86/x64 JIT and Remote Assembler for C++.
 //
-// Permission is hereby granted, free of charge, to any person
-// obtaining a copy of this software and associated documentation
-// files (the "Software"), to deal in the Software without
-// restriction, including without limitation the rights to use,
-// copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following
-// conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// OTHER DEALINGS IN THE SOFTWARE.
+// [License]
+// Zlib - See LICENSE.md file in the package.
 
-// MSVC
+#if !defined(_ASMJIT_BUILD_H)
+#include "build.h"
+#endif // !_ASMJIT_BUILD_H
+
+// ============================================================================
+// [MSVC]
+// ============================================================================
+
 #if defined(_MSC_VER)
-
 // Disable some warnings we know about
-#pragma warning(push)
-#pragma warning(disable: 4127) // conditional expression is constant
-#pragma warning(disable: 4251) // struct needs to have dll-interface to be used
-                               // by clients of struct ...
-#pragma warning(disable: 4275) // non dll-interface struct ... used as base for
-                               // dll-interface struct
-#pragma warning(disable: 4355) // this used in base member initializer list
-#pragma warning(disable: 4800) // forcing value to bool 'true' or 'false'
+# pragma warning(push)
+# pragma warning(disable: 4127) // conditional expression is constant
+# pragma warning(disable: 4201) // nameless struct/union
+# pragma warning(disable: 4244) // '+=' : conversion from 'int' to 'x', possible
+                                // loss of data
+# pragma warning(disable: 4251) // struct needs to have dll-interface to be used
+                                // by clients of struct ...
+# pragma warning(disable: 4275) // non dll-interface struct ... used as base for
+                                // dll-interface struct
+# pragma warning(disable: 4355) // this used in base member initializer list
+# pragma warning(disable: 4480) // specifying underlying type for enum
+# pragma warning(disable: 4800) // forcing value to bool 'true' or 'false'
 
 // Rename symbols.
-#define vsnprintf _vsnprintf
-#define snprintf _snprintf
-
+# if !defined(vsnprintf)
+#  define ASMJIT_DEFINED_VSNPRINTF
+#  define vsnprintf _vsnprintf
+# endif // !vsnprintf
+# if !defined(snprintf)
+#  define ASMJIT_DEFINED_SNPRINTF
+#  define snprintf _snprintf
+# endif // !snprintf
 #endif // _MSC_VER
+
+// ============================================================================
+// [GNUC]
+// ============================================================================
+
+#if defined(__GNUC__) && !defined(__clang__)
+# if __GNUC__ >= 4 && !defined(__MINGW32__)
+#  pragma GCC visibility push(hidden)
+# endif // __GNUC__ >= 4
+#endif // __GNUC__

@@ -19,7 +19,7 @@ LIBS_ROOT = $(VM_ROOT)/libs
 ASMJIT_CFLAGS = -Wno-error
 INCLUDE    = -I$(VM_ROOT)/include -I$(LIBS_ROOT)
 VM_INCLUDE = -I$(VM_ROOT)/vm
-ASMJIT_INCLUDE = -I$(LIBS_ROOT)/AsmJit
+ASMJIT_INCLUDE = -I$(LIBS_ROOT)/asmjit
 USER_INCLUDE = -I$(ROOT)
 DEFS       = $(USER_DEFS) -D_POSIX_SOURCE
 THREAD_LIB = -lpthread 
@@ -52,20 +52,34 @@ ifneq ($(WITH_SDL),)
   CFLAGS += $(shell sdl-config --cflags)
 endif
 
+ASMJIT_OBJ_DIR = $(OBJ)/asmjit
 ifneq ($(NO_JIT),1)
 ASMJIT_OBJ = \
-        $(OBJ)/AssemblerX86X64$(OBJ_SUFF) \
-        $(OBJ)/CodeGenerator$(OBJ_SUFF) \
-        $(OBJ)/Compiler$(OBJ_SUFF) \
-        $(OBJ)/CompilerX86X64$(OBJ_SUFF) \
-        $(OBJ)/CpuInfo$(OBJ_SUFF) \
-        $(OBJ)/Defs$(OBJ_SUFF) \
-        $(OBJ)/DefsX86X64$(OBJ_SUFF) \
-        $(OBJ)/Logger$(OBJ_SUFF) \
-        $(OBJ)/MemoryManager$(OBJ_SUFF) \
-        $(OBJ)/OperandX86X64$(OBJ_SUFF) \
-        $(OBJ)/Platform$(OBJ_SUFF) \
-        $(OBJ)/Util$(OBJ_SUFF)
+		$(ASMJIT_OBJ_DIR)/x86cpuinfo$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86operand_regs$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86assembler$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86operand$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86scheduler$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86context$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86inst$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/x86compiler$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/context$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/containers$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/cpuinfo$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/error$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/assembler$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/runtime$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/cputicks$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/vmem$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/operand$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/zone$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/compiler$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/codegen$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/globals$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/constpool$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/string$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/logger$(OBJ_SUFF) \
+		$(ASMJIT_OBJ_DIR)/intutil$(OBJ_SUFF)
 else
 ASMJIT_OBJ = 
 endif
@@ -102,12 +116,16 @@ $(OBJ)/%$(OBJ_SUFF): $(ROOT)/%.cpp \
 	$(VM_ROOT)/common.mk $(USER_DEPS)
 	$(CXX) -c $(DEFS) $(CFLAGS) $(INCLUDE) $(VM_INCLUDE) $< -o $@
 
-$(OBJ)/%$(OBJ_SUFF): $(LIBS_ROOT)/AsmJit/%.cpp $(OBJ)/.dir
+$(ASMJIT_OBJ_DIR)/x86%$(OBJ_SUFF): $(LIBS_ROOT)/asmjit/x86/x86%.cpp $(OBJ)/.dir 
+	$(CXX) -c $(DEFS) $(CFLAGS) $(ASMJIT_CFLAGS) $(INCLUDE) $(ASMJIT_INCLUDE) $< -o $@
+
+$(ASMJIT_OBJ_DIR)/%$(OBJ_SUFF): $(LIBS_ROOT)/asmjit/base/%.cpp $(OBJ)/.dir
 	$(CXX) -c $(DEFS) $(CFLAGS) $(ASMJIT_CFLAGS) $(INCLUDE) $(ASMJIT_INCLUDE) $< -o $@
 
 $(OBJ)/.dir:
 	mkdir -p $(OUT)
 	mkdir -p $(OBJ)
+	mkdir -p $(ASMJIT_OBJ_DIR)
 	mkdir -p $(BIN)
 	touch $@
 

@@ -1,93 +1,53 @@
-// AsmJit - Complete JIT Assembler for C++ Language.
-
-// Copyright (c) 2008-2010, Petr Kobalicek <kobalicek.petr@gmail.com>
+// [AsmJit]
+// Complete x86/x64 JIT and Remote Assembler for C++.
 //
-// Permission is hereby granted, free of charge, to any person
-// obtaining a copy of this software and associated documentation
-// files (the "Software"), to deal in the Software without
-// restriction, including without limitation the rights to use,
-// copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following
-// conditions:
-//
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-// OTHER DEALINGS IN THE SOFTWARE.
-
-// This file is designed to be changeable. Platform specific changes
-// should be applied to this file and this guarantes and never versions
-// of AsmJit library will never overwrite generated config files.
-//
-// So modify this will by your build system or hand.
+// [License]
+// Zlib - See LICENSE.md file in the package.
 
 // [Guard]
 #ifndef _ASMJIT_CONFIG_H
 #define _ASMJIT_CONFIG_H
 
-// ============================================================================
-// [AsmJit - OS]
-// ============================================================================
-
-// Provides definitions about your operating system. It's detected by default,
-// so override it if you have problems with automatic detection.
+// This file can be used to modify built-in features of AsmJit. AsmJit is by
+// default compiled only for host processor to enable JIT compilation. Both
+// Assembler and Compiler code generators are compiled by default.
 //
-// #define ASMJIT_WINDOWS 1
-// #define ASMJIT_POSIX 2
-
-// ============================================================================
-// [AsmJit - Architecture]
-// ============================================================================
-
-// Provides definitions about your cpu architecture. It's detected by default,
-// so override it if you have problems with automatic detection.
-
-// #define ASMJIT_X86
-#define ASMJIT_X64
-
-// ============================================================================
-// [AsmJit - API]
-// ============================================================================
-
-// If you are embedding AsmJit library into your project (statically), undef
-// ASMJIT_API macro. ASMJIT_HIDDEN macro can contain visibility (used by GCC)
-// to hide some AsmJit symbols that shouldn't be never exported.
+// ASMJIT_BUILD_... flags can be defined to build additional backends that can
+// be used for remote code generation.
 //
-// If you have problems with throw() in compilation time, undef ASMJIT_NOTHROW
-// to disable this feature. ASMJIT_NOTHROW marks functions that never throws
-// an exception.
-
-#define ASMJIT_HIDDEN
-#define ASMJIT_API
-// #define ASMJIT_NOTHROW
-
+// ASMJIT_DISABLE_... flags can be defined to disable standard features. These
+// are handy especially when building asmjit statically and some features are
+// not needed or unwanted (like Compiler).
 
 // ============================================================================
-// [AsmJit - Memory Management]
+// [AsmJit - Build-Type]
 // ============================================================================
 
-#define ASMJIT_MALLOC ::malloc
-#define ASMJIT_REALLOC ::realloc
-#define ASMJIT_FREE ::free
+// #define ASMJIT_EMBED              // Asmjit is embedded (implies ASMJIT_STATIC).
+// #define ASMJIT_STATIC             // Define to enable static-library build.
 
 // ============================================================================
-// [AsmJit - Debug]
+// [AsmJit - Build-Mode]
 // ============================================================================
 
-// Turn debug on/off (to bypass autodetection)
-// #define ASMJIT_DEBUG
-// #define ASMJIT_NO_DEBUG
+// #define ASMJIT_DEBUG              // Define to enable debug-mode.
+// #define ASMJIT_RELEASE            // Define to enable release-mode.
+// #define ASMJIT_TRACE              // Define to enable tracing.
 
-// Setup custom assertion code.
-#define ASMJIT_ASSERT(exp) do { if (!(exp)) ::AsmJit::assertionFailure(__FILE__, __LINE__, #exp); } while(0)
+// ============================================================================
+// [AsmJit - Features]
+// ============================================================================
+
+// If none of these is defined AsmJit will select host architecture by default.
+// #define ASMJIT_BUILD_X86          // Define to enable x86 instruction set (32-bit).
+// #define ASMJIT_BUILD_X64          // Define to enable x64 instruction set (64-bit).
+// #define ASMJIT_BUILD_HOST         // Define to enable host instruction set.
+
+// AsmJit features are enabled by default.
+// #define ASMJIT_DISABLE_COMPILER   // Disable Compiler (completely).
+// #define ASMJIT_DISABLE_LOGGER     // Disable Logger (completely).
+// #define ASMJIT_DISABLE_NAMES      // Disable everything that uses strings
+                                     // (instruction names, error names, ...).
 
 // [Guard]
 #endif // _ASMJIT_CONFIG_H
