@@ -224,23 +224,42 @@ private:
         node->right()->visit(this);
         node->left()->visit(this);
 
+        unify_binary_arg_types();
+
         VarType first = _typesStack.top();
         _typesStack.pop();
         VarType second = _typesStack.top();
         _typesStack.pop();
-        assert(first == VT_INT && second == VT_INT);
 
-        Label beforeTrue(bytecode());
-        Label afterTrue(bytecode());
-        Label afterFalse(bytecode());
-        bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
-        bytecode()->addBranch(BC_JA, afterTrue);
-        beforeTrue.bind(bytecode()->current());
-        pushInt1();
-        bytecode()->addBranch(BC_JA, afterFalse);
-        afterTrue.bind(bytecode()->current());
-        pushInt0();
-        afterFalse.bind(bytecode()->current());
+        if (first == VT_INT && second == VT_INT) {
+            Label beforeTrue(bytecode());
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
+            bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
+            bytecode()->addBranch(BC_JA, afterTrue);
+            beforeTrue.bind(bytecode()->current());
+            pushInt1();
+            bytecode()->addBranch(BC_JA, afterFalse);
+            afterTrue.bind(bytecode()->current());
+            pushInt0();
+            afterFalse.bind(bytecode()->current());
+        } else {
+            assert(first == VT_DOUBLE && second == VT_DOUBLE);
+            emit(BC_DCMP);
+            pushInt0();
+            emit(BC_SWAP);
+            Label beforeTrue(bytecode());
+            Label afterTrue(bytecode());
+            Label afterFalse(bytecode());
+            bytecode()->addBranch(_typeTokenInstruction[VT_INT][operation], beforeTrue);
+            bytecode()->addBranch(BC_JA, afterTrue);
+            beforeTrue.bind(bytecode()->current());
+            pushInt1();
+            bytecode()->addBranch(BC_JA, afterFalse);
+            afterTrue.bind(bytecode()->current());
+            pushInt0();
+            afterFalse.bind(bytecode()->current());
+        }
     }
 
     void binary_logic(BinaryOpNode *node) {

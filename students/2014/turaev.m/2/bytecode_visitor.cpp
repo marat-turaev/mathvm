@@ -20,6 +20,7 @@ BytecodeMainVisitor::BytecodeMainVisitor(Code *code, AstFunction *topFunction) :
     _typeTokenInstruction[VT_INT][tMUL] = BC_IMUL;
     _typeTokenInstruction[VT_DOUBLE][tDIV] = BC_DDIV;
     _typeTokenInstruction[VT_INT][tDIV] = BC_IDIV;
+    _typeTokenInstruction[VT_INT][tMOD] = BC_IMOD;
 
     _typeTokenInstruction[VT_INT][tAOR] = BC_IAOR;
     _typeTokenInstruction[VT_INT][tAAND] = BC_IAAND;

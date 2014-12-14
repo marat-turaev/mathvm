@@ -346,6 +346,7 @@ void inline InterpreterCodeImpl::executeFunction() {
                 pop();
                 double right = top<double>();
                 pop();
+                //TODO: try substraction
                 push<int64_t>(left < right ? -1 : left == right ? 0 : 1);
                 break;
             }
